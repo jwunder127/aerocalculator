@@ -6,13 +6,13 @@ import Sidebar from './Sidebar';
 
 const airports = require('../airports.json');
 
-function isMatchingAirport(airport, value){
-    return (
-      airport.name.toLowerCase().indexOf(value.toLowerCase()) !== -1 ||
-      (airport.iata && airport.iata.toLowerCase().indexOf(value.toLowerCase()) !== -1) ||
-      (airport.city && airport.city.toLowerCase().indexOf(value.toLowerCase()) !== -1)
-      );
-  }
+export function isMatchingAirport(airport, value){
+  return (
+    airport.name.toLowerCase().indexOf(value.toLowerCase()) !== -1 ||
+    (airport.iata && airport.iata.toLowerCase().indexOf(value.toLowerCase()) !== -1) ||
+    (airport.city && airport.city.toLowerCase().indexOf(value.toLowerCase()) !== -1)
+    );
+}
 
 export default class AppContainer extends Component {
   constructor(props){
@@ -211,3 +211,4 @@ export default class AppContainer extends Component {
     );
   }
 }
+

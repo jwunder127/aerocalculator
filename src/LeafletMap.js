@@ -1,5 +1,5 @@
 import React from 'react';
-import { Map, TileLayer } from 'react-leaflet';
+import { Map, ScaleControl, TileLayer } from 'react-leaflet';
 
 const LeafletMap = (props) => {
   return (
@@ -8,6 +8,7 @@ const LeafletMap = (props) => {
               attribution="&amp;copy <a href=&quot;http://osm.org/copyright&quot;>OpenStreetMap</a> contributors"
               url="http://{s}.tile.osm.org/{z}/{x}/{y}.png"
             />
+            <ScaleControl />
             {props.renderMarkersAndLine()}
           </Map>
   );
