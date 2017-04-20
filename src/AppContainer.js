@@ -1,26 +1,49 @@
 import React, { Component } from 'react';
+import { Marker, Polyline, Popup } from 'react-leaflet';
 import turf from 'turf';
 import LeafletMap from './LeafletMap';
 import Sidebar from './Sidebar';
 
 const airports = require('../airports.json');
 
+function isMatchingAirport(airport, value){
+    return (
+      airport.name.toLowerCase().indexOf(value.toLowerCase()) !== -1 ||
+      (airport.iata && airport.iata.toLowerCase().indexOf(value.toLowerCase()) !== -1) ||
+      (airport.city && airport.city.toLowerCase().indexOf(value.toLowerCase()) !== -1)
+      );
+  }
 
 export default class AppContainer extends Component {
   constructor(props){
     super(props);
     this.state = {
       airports: airports,
-      locationA: '',
-      locationB: '',
-      distance: '',
+      inputA: '',
+      inputB: '',
+      mapBounds: [[25, -120], [55, -75]]
     };
+    this.handleClearData = this.handleClearData.bind(this);
     this.handleCalculateDistance = this.handleCalculateDistance.bind(this);
-    this.handleLocationAClick = this.handleLocationAClick.bind(this);
-    this.handleLocationAUpdate = this.handleLocationAUpdate.bind(this);
-    this.handleLocationBClick = this.handleLocationBClick.bind(this);
-    this.handleLocationBUpdate = this.handleLocationBUpdate.bind(this);
+    this.handleInputAClick = this.handleInputAClick.bind(this);
+    this.handleInputAUpdate = this.handleInputAUpdate.bind(this);
+    this.handleInputBClick = this.handleInputBClick.bind(this);
+    this.handleInputBUpdate = this.handleInputBUpdate.bind(this);
     this.renderDistanceResults = this.renderDistanceResults.bind(this);
+    this.renderMarkersAndLine = this.renderMarkersAndLine.bind(this);
+  }
+
+  /* Sidebar functions*/
+  handleClearData(){
+    this.setState({
+      airportOne: null,
+      airportTwo: null,
+      inputA: '',
+      inputB: '',
+      markerAirportOne: null,
+      markerAirportTwo: null,
+      nauticalDistance: null
+    });
   }
 
   findAirports(airportOneName, airportTwoName){
@@ -38,83 +61,151 @@ export default class AppContainer extends Component {
 
   handleCalculateDistance(evt){
     evt.preventDefault();
-    const [airportOne, airportTwo] = this.findAirports(this.state.locationA, this.state.locationB);
+    if (!this.state.inputA || !this.state.inputB) {
+      alert('You need two airports to calculate distance!')
+      return;
+    }
 
-    const locA = {
+    try {
+      const [airportOne, airportTwo] = this.findAirports(this.state.inputA.trim(), this.state.inputB.trim());
+
+      const locA = {
+          type: 'Point',
+          coordinates: [airportOne.longitude, airportOne.latitude]
+        };
+
+      const locB = {
         type: 'Point',
-        coordinates: [airportOne.longitude, airportOne.latitude]
+        coordinates: [airportTwo.longitude, airportTwo.latitude]
       };
 
-    const locB = {
-      type: 'Point',
-      coordinates: [airportTwo.longitude, airportTwo.latitude]
-    };
+      const distance = turf.distance(locA, locB, 'kilometers');
+      const convertedDistance = distance * (1 / 1.852); //conversion to nautical miles
 
-    const distance = turf.distance(locA, locB, 'kilometers');
-    const convertedDistance = distance * (1 / 1.852); //conversion to nautical miles
-    this.setState({nauticalDistance: convertedDistance.toFixed(0)});
-  }
-
-  handleLocationAClick(value){
-    this.setState({
-      locationA: value
-    });
-  }
-
-  handleLocationAUpdate(evt){
-    evt.preventDefault();
-    this.setState({
-      locationA: evt.target.value
-    });
-  }
-
-  handleLocationBClick(value){
-    this.setState({
-      locationB: value
-    });
-
-  }
-
-  handleLocationBUpdate(evt){
-    evt.preventDefault();
-    this.setState({
-      locationB: evt.target.value
-    });
-  }
-
-  renderDistanceResults(){
-    if(this.state.nauticalDistance) {
-      return (
-        <div>
-          The distance between {this.state.locationA} and {this.state.locationB} is: {this.state.nauticalDistance} nautical miles!
-        </div>
-        )
-    } else {
-      return (
-        <div>Select and airport to get started </div>
-        )
+      const southWest = [
+          Math.min(airportOne.latitude, airportTwo.latitude),
+          Math.min(airportOne.longitude, airportTwo.longitude)
+        ];
+      const northEast = [
+          Math.max(airportOne.latitude, airportTwo.latitude),
+          Math.max(airportOne.longitude, airportTwo.longitude)
+      ];
+      this.setState({
+        airportOne: airportOne,
+        airportTwo: airportTwo,
+        markerAirportOne: [airportOne.latitude, airportOne.longitude],
+        markerAirportTwo: [airportTwo.latitude, airportTwo.longitude],
+        mapBounds: [southWest, northEast],
+        nauticalDistance: convertedDistance.toFixed(0)
+      });
+    } catch (err) {
+      alert('One of your airports was invalid--make sure you select one from the drop-down menu.');
     }
   }
 
+  handleInputAClick(value){
+    this.setState({
+      inputA: value
+    });
+  }
 
+  handleInputAUpdate(evt){
+    evt.preventDefault();
+    this.setState({
+      inputA: evt.target.value
+    });
+  }
+
+  handleInputBClick(value){
+    this.setState({
+      inputB: value
+    });
+
+  }
+
+  handleInputBUpdate(evt){
+    evt.preventDefault();
+    this.setState({
+      inputB: evt.target.value
+    });
+  }
+
+
+  renderDistanceResults(){
+    if (this.state.nauticalDistance) {
+      return (
+        <div>
+          The distance between {this.state.airportOne.name
+          } and {this.state.airportTwo.name} is: {this.state.nauticalDistance} nautical miles!
+        </div>
+        );
+    } else {
+      return (
+        <div>
+          <p>
+            To get started, enter an airport name, IATA code, or city
+          </p>
+        </div>
+        );
+    }
+  }
+
+  /* Map functions*/
+
+  renderMarkersAndLine(){
+    if (this.state.markerAirportOne && this.state.markerAirportTwo){
+      return (
+        <div>
+          <Marker position={this.state.markerAirportOne}>
+            <Popup>
+              <div>
+                <p>{this.state.airportOne.name}</p>
+              </div>
+            </Popup>
+          </Marker>
+          <Marker position={this.state.markerAirportTwo}>
+            <Popup>
+              <div>
+                <p>{this.state.airportTwo.name}</p>
+              </div>
+            </Popup>
+          </Marker>
+          <Polyline positions={[this.state.markerAirportOne, this.state.markerAirportTwo]}>
+            <Popup>
+              <div>
+                <p>{this.state.nauticalDistance} nautical miles</p>
+              </div>
+            </Popup>
+          </Polyline>
+        </div>
+      );
+    }
+  }
+
+  /* Final Render */
   render() {
     return (
       <div>
         <div id="sidebar" className="col-xs-4" >
           <Sidebar
             airports={this.state.airports}
-            locationA={this.state.locationA}
-            locationB={this.state.locationB}
+            inputA={this.state.inputA}
+            inputB={this.state.inputB}
+            handleClearData={this.handleClearData}
             handleCalculateDistance={this.handleCalculateDistance}
-            handleLocationAClick={this.handleLocationAClick}
-            handleLocationAUpdate={this.handleLocationAUpdate}
-            handleLocationBClick={this.handleLocationBClick}
-            handleLocationBUpdate={this.handleLocationBUpdate}
+            handleInputAClick={this.handleInputAClick}
+            handleInputAUpdate={this.handleInputAUpdate}
+            handleInputBClick={this.handleInputBClick}
+            handleInputBUpdate={this.handleInputBUpdate}
+            isMatchingAirport={isMatchingAirport}
             renderDistanceResults={this.renderDistanceResults}
           />
         </div>
         <div id="map" className="col-xs-8" >
-          <LeafletMap />
+          <LeafletMap
+            mapBounds={this.state.mapBounds}
+            renderMarkersAndLine={this.renderMarkersAndLine}
+          />
         </div>
       </div>
     );

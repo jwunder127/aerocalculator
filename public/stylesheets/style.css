@@ -3,3 +3,8 @@
     height: 100vh;
     width: 100%;
 }
+
+.airport-input {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
