@@ -38,8 +38,5 @@ In addition to the libraries referenced above, key external libraries used inclu
 * turf.js
 
 
-## Thanks for reading!
-If you have any questions, please reach out to me at john.w.underwood.iii@gmail.com or (207)-504-1370
-
 Thanks!
 John Underwood
