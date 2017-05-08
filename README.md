@@ -2,6 +2,8 @@
 
 Aerocalculator is a web application that will take any two airports in the United States and tell you how far apart they are! Additionally, aerocalculator will show you where your selected airports are on a map and give you a path in between them.
 
+Check it out here: https://aerocalculator.herokuapp.com/
+
 ## How does it work?
 
 Aerocalculator was built using JavaScript, React.js, and Leaflet.js. Airport information was provided by [openflights.org](http://openflights.org/data.html)
